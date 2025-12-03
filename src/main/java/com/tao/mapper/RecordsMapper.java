@@ -10,8 +10,8 @@ public interface RecordsMapper {
 
     // 🔹 插入记录（id 是自增的）
     @Insert("INSERT INTO T_POINT_FORECAST_RECORD ( " +
-            " USERNAME, MAKETIME,wordPath,isTeamWork,team,taskStatus,userId,dataType,taskName,productType,email) " +
-            "VALUES (#{userName}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email})")
+            " USERNAME, MAKETIME,wordPath,isTeamWork,team,taskStatus,userId,dataType,taskName,productType,email,ftp) " +
+            "VALUES (#{userName}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email},#{ftp})")
     @Options(useGeneratedKeys = true, keyProperty = "id") // 获取数据库生成的 id
     void insertRecord(Records record);
 
@@ -36,6 +36,7 @@ public interface RecordsMapper {
             "<if test='taskName != null'>taskName = #{taskName},</if>" +
             "<if test='productType != null'>productType = #{productType},</if>" +
             "<if test='email != null'>email = #{email},</if>" +
+            "<if test='ftp != null'>ftp = #{ftp},</if>" +
             "<if test='dataType != null'>dataType = #{dataType}</if>" +
             "</trim>" +
             "WHERE ID=#{id}" +

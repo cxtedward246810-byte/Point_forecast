@@ -23,4 +23,5 @@ public class Records {
     private String taskName;
     private String productType;
     private String email;
+    private String ftp;
 }
