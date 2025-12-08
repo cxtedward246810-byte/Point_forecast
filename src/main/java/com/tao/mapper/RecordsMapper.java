@@ -10,8 +10,8 @@ public interface RecordsMapper {
 
     // 🔹 插入记录（id 是自增的）
     @Insert("INSERT INTO T_POINT_FORECAST_RECORD ( " +
-            " USERNAME, MAKETIME,wordPath,isTeamWork,team,taskStatus,userId,dataType,taskName,productType,email,ftp) " +
-            "VALUES (#{userName}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email},#{ftp})")
+            " AREACODE, MAKETIME,wordPath,isTeamWork,team,taskStatus,userId,dataType,taskName,productType,email,ftp) " +
+            "VALUES (#{AREACODE}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email},#{ftp})")
     @Options(useGeneratedKeys = true, keyProperty = "id") // 获取数据库生成的 id
     void insertRecord(Records record);
 
@@ -26,7 +26,7 @@ public interface RecordsMapper {
     @Update("<script>" +
             "UPDATE T_POINT_FORECAST_RECORD SET" +
             "<trim suffixOverrides=','>" +
-            "<if test='userName != null'>USERNAME = #{userName},</if>" +
+            "<if test='areaCode != null'>AREACODE = #{areaCode},</if>" +
             "<if test='makeTime != null'>MAKETIME = #{makeTime},</if>" +
             "<if test='wordPath != null'>wordPath = #{wordPath},</if>" +
             "<if test='isTeamWork != null'>isTeamWork = #{isTeamWork},</if>" +
@@ -76,8 +76,8 @@ public interface RecordsMapper {
             // 🔹 areaCode 不为空时才启用过滤逻辑
             "<if test='areaCode != null and areaCode != \"\"'>",
             "  AND (",
-            "      (taskStatus = 0 AND userId = #{areaCode})",
-            "   OR (taskStatus IN (1, 2) AND (userId = #{areaCode} OR team LIKE #{teamLike}))",
+            "      (taskStatus = 0 AND AREACODE = #{areaCode})",
+            "   OR (taskStatus IN (1, 2) AND (AREACODE = #{areaCode} OR team LIKE #{teamLike}))",
             "  )",
             "</if>",
 
@@ -128,8 +128,8 @@ public interface RecordsMapper {
             // 🔹 areaCode 不为空时才启用过滤逻辑
             "<if test='areaCode != null and areaCode != \"\"'>",
             "  AND (",
-            "      (taskStatus = 0 AND userId = #{areaCode})",
-            "   OR (taskStatus IN (1, 2) AND (userId = #{areaCode} OR team LIKE #{teamLike}))",
+            "      (taskStatus = 0 AND AREACODE = #{areaCode})",
+            "   OR (taskStatus IN (1, 2) AND (AREACODE = #{areaCode} OR team LIKE #{teamLike}))",
             "  )",
             "</if>",
 
@@ -175,7 +175,7 @@ public interface RecordsMapper {
             "<if test='areaCode != null and areaCode != \"\"'>",
             "  AND (",
 
-            "  taskStatus =1 AND (userId = #{areaCode} OR team LIKE #{teamLike}) ",
+            "  taskStatus =1 AND (AREACODE = #{areaCode} OR team LIKE #{teamLike}) ",
             "  )",
             "</if>",
 
@@ -194,8 +194,6 @@ public interface RecordsMapper {
     @Select("SELECT * FROM T_POINT_FORECAST_RECORD where ID=#{id}")
     Records getAllRecordsById(Integer id);
 
-    @Select("SELECT * FROM T_POINT_FORECAST_RECORD WHERE team LIKE '%${teamCode},0%'")
-    List<Records> findRoughUnfinishedByTeam(@Param("teamCode") String teamCode);
 
     @Select("SELECT * FROM T_POINT_FORECAST_RECORD WHERE " +
             "MANAGEID=#{manageId}")

@@ -9,7 +9,7 @@ public class Records {
 //    private String element;
 //    private String data;
 //    private Integer isUpdate;
-    private String userName;
+    private String areaCode;
     private String makeTime;
 //    private String startReportTime;
 //    private Integer hourSpan;
