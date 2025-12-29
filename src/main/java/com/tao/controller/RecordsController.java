@@ -138,9 +138,9 @@ public SysResult getLonLatByStationNum(@RequestBody  List<String> stationNums) {
 
     }
     @GetMapping("/updateTeamStatus")
-    public SysResult updateTeamStatus(@RequestParam Integer id,@RequestParam Boolean status,@RequestParam String areaCode) {
+    public SysResult updateTeamStatus(@RequestParam Integer id,@RequestParam Boolean status,@RequestParam String areaCode,@RequestParam(required = false) String showName) {
     try {
-        return  recordsService.updateTeam(id,areaCode,status);
+        return  recordsService.updateTeam(id,areaCode,status,showName);
     } catch (Exception e) {
         return SysResult.fail(e.getMessage());
     }

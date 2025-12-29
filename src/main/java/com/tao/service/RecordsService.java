@@ -7,14 +7,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tao.mapper.RecordsMapper;
+import com.tao.mapper.YthptUserMapper;
 import com.tao.pojo.Records;
 import com.tao.pojo.SysResult;
+import com.tao.pojo.YthptUser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class RecordsService {
 
@@ -41,7 +52,60 @@ public class RecordsService {
         }
 
     }
+    public static String sendWsMessage(
+            List<String> userNames,
+            String flag,
+            String type,
+            String group,
+            String category,
+            String path,
+            String time,
+            String des,
+            String taskId
+    ) {
+        try {
+            String url = "http://47.109.86.96:15010/ythptWebsocket/push/send";
 
+            ObjectMapper mapper = new ObjectMapper();
+
+            // detail
+            ObjectNode detailNode = mapper.createObjectNode();
+            detailNode.put("id", taskId);
+
+            // payload
+            ObjectNode payloadNode = mapper.createObjectNode();
+            payloadNode.put("flag", flag);
+            payloadNode.put("type", type);
+            payloadNode.put("group", group);
+            payloadNode.put("category", category);
+            payloadNode.put("path", path);
+            payloadNode.put("time", time);
+            payloadNode.put("des", des);
+            payloadNode.set("detail", detailNode);
+
+            // root
+            ObjectNode rootNode = mapper.createObjectNode();
+            rootNode.set("userNames", mapper.valueToTree(userNames));
+            rootNode.set("payload", payloadNode);
+
+            String requestBody = mapper.writeValueAsString(rootNode);
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<String> response =
+                    restTemplate.postForEntity(url, entity, String.class);
+
+            return response.getBody();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "发送失败：" + e.getMessage();
+        }
+    }
+    @Autowired
+    private YthptUserMapper ythptUserMapper;
     // 更新
     public SysResult modifyRecord(Records record) {
         try {
@@ -50,7 +114,25 @@ public class RecordsService {
                 return SysResult.success("已发布，无权执行更新",null);
             }
            recordsMapper.updateRecord(record);
-            return SysResult.success("更新成功");
+            Records rc= recordsMapper.getRecordsById(record.getId());
+            List<String> userNames=ythptUserMapper.getUserByAreaCode(rc.getAreaCode());
+            YthptUser Users=ythptUserMapper.getUserMsg(Integer.valueOf(record.getUserId()));
+            String result="";
+            if (onlyIdAndTaskStatusNotNull(record)) {
+                 result = sendWsMessage(
+                        userNames,
+                        "_ct_ws_message_ythpt_",
+                        "info",
+                        "决策服务",
+                        "定点服务",
+                        "/decision-support/targeted-services",
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                        Users.getShowName()+"邀请您参与定点服务材料“"+rc.getTaskName()+"”协同编辑，请前往查看。",
+                        record.getId().toString()
+                );
+                log.info("websocket发送结果：{}", result);
+            }
+            return SysResult.success("更新成功，websocket发送结果："+result);
         } catch (Exception e) {
             return SysResult.fail(e.getMessage());
         }
@@ -166,15 +248,34 @@ public SysResult getAll(String taskName, String startTime, String endTime,String
     }
 
 
-    public SysResult updateTeam(Integer id,String areaCode, boolean status) throws Exception {
-        Records record= recordsMapper.getAllRecordsById(id);
-        String jsonArrayStr=record.getTeam();
-        String updat= updateTeamStatus(jsonArrayStr,areaCode,status);
-        Records rd =new Records();
-        rd.setId(id);
-        rd.setTeam(updat);
-        recordsMapper.updateRecord(rd);
-        return SysResult.success("更新成功",updat);
+    public SysResult updateTeam(Integer id,String areaCode, boolean status,String showName)  {
+        try {
+            Records record= recordsMapper.getAllRecordsById(id);
+            String jsonArrayStr=record.getTeam();
+            String updat= updateTeamStatus(jsonArrayStr,areaCode,status);
+            Records rd =new Records();
+            rd.setId(id);
+            rd.setTeam(updat);
+            recordsMapper.updateRecord(rd);
+            YthptUser Users=ythptUserMapper.getUserMsg(Integer.valueOf(record.getUserId()));
+            String result = sendWsMessage(
+                    Collections.singletonList(Users.getUserName()),
+                    "_ct_ws_message_ythpt_",
+                    "success",
+                    "决策服务",
+                    "定点服务",
+                    "/decision-support/targeted-services",
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                    showName+"已完成"+Users.getShowName()+"邀请的“"+record.getTaskName()+"”协同编辑，请前往查看。",
+                    record.getId().toString()
+            );
+
+                log.info("websocket发送结果：{}", result);
+
+            return SysResult.success("更新成功,websocket发送结果"+result,updat);
+        } catch (Exception e) {
+            return SysResult.fail(e.getMessage());
+        }
     }
 
     /**
@@ -248,4 +349,25 @@ public SysResult getAll(String taskName, String startTime, String endTime,String
         // 返回修改后的完整 JSON 数组
         return mapper2.writeValueAsString(root);
     }
+
+    public static boolean onlyIdAndTaskStatusNotNull(Records r) {
+        if (r == null) {
+            return false;
+        }
+
+        return r.getId() != null
+                && r.getTaskStatus() != null
+                && r.getAreaCode() == null
+                && r.getMakeTime() == null
+                && r.getWordPath() == null
+                && r.getIsTeamWork() == null
+                && r.getTeam() == null
+                && r.getUserId() == null
+                && r.getDataType() == null
+                && r.getTaskName() == null
+                && r.getProductType() == null
+                && r.getEmail() == null
+                && r.getFtp() == null;
+    }
+
 }

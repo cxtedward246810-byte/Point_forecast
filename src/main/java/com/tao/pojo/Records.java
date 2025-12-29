@@ -5,15 +5,8 @@ import lombok.Data;
 @Data
 public class Records {
     private Integer id;
-//    private String station;
-//    private String element;
-//    private String data;
-//    private Integer isUpdate;
     private String areaCode;
     private String makeTime;
-//    private String startReportTime;
-//    private Integer hourSpan;
-//    private  Integer manageId;
     private String wordPath;
     private Integer isTeamWork;
     private String team;

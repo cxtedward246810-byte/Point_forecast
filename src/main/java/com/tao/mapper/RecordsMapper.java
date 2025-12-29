@@ -11,7 +11,7 @@ public interface RecordsMapper {
     // 🔹 插入记录（id 是自增的）
     @Insert("INSERT INTO T_POINT_FORECAST_RECORD ( " +
             " AREACODE, MAKETIME,wordPath,isTeamWork,team,taskStatus,userId,dataType,taskName,productType,email,ftp) " +
-            "VALUES (#{AREACODE}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email},#{ftp})")
+            "VALUES (#{areaCode}, #{makeTime},#{wordPath},#{isTeamWork},#{team},#{taskStatus},#{userId},#{dataType},#{taskName},#{productType},#{email},#{ftp})")
     @Options(useGeneratedKeys = true, keyProperty = "id") // 获取数据库生成的 id
     void insertRecord(Records record);
 
@@ -46,6 +46,9 @@ public interface RecordsMapper {
 
     @Select("select taskStatus from T_POINT_FORECAST_RECORD where ID=#{id}")
     Integer getTaskStatus(Integer id);
+
+    @Select("select * from T_POINT_FORECAST_RECORD where ID=#{id}")
+    Records getRecordsById(Integer id);
 
     @Select({
             "<script>",
